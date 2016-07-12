@@ -1,0 +1,40 @@
+
+object-group network azure-networks
+ description Azure-Virtual-Network
+ network-object 10.0.0.0 255.255.255.0
+
+object-group network onprem-networks
+ description On-premises Network
+ network-object 192.168.1.0 255.255.255.0
+
+access-list azure-vpn-acl extended permit ip object-group azure-networks object-group onprem-networks 
+access-list azure-vpn-acl extended permit ip object-group onprem-networks object-group azure-networks
+
+nat (inside) 0 access-list azure-vpn-acl
+
+sysopt connection tcpmss 1350
+sysopt connection preserve-vpn-flows
+
+crypto ipsec transform-set azure-ipsec-proposal-set esp-aes-256 esp-sha-hmac
+crypto ipsec security-association lifetime seconds 3600
+crypto ipsec security-association lifetime kilobytes 102400000
+
+crypto map azure-crypto-map 10 match address azure-vpn-acl
+crypto map azure-crypto-map 10 set peer x.x.x.x
+crypto map azure-crypto-map 10 set transform-set azure-ipsec-proposal-set
+
+crypto map azure-crypto-map interface outside
+crypto isakmp enable outside
+
+crypto isakmp policy 5
+  authentication pre-share
+  encryption aes-256
+  hash sha
+  group 2
+  lifetime 28800
+
+tunnel-group X.X.X.X type ipsec-l2l
+tunnel-group X.X.X.X ipsec-attributes
+  pre-shared-key **********
+
+
